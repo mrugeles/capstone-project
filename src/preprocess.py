@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import category_encoders as ce
 
 class Preprocess:
     def likeliHood(self, positives, negatives):
