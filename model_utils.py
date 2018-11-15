@@ -6,6 +6,7 @@ from IPython.display import display
 
 from sklearn.model_selection import train_test_split
 from sklearn.base import clone
+from sklearn.metrics import fbeta_score
 
 def getDataSet(path):
     pd.set_option('display.max_colwidth', -1)
@@ -128,11 +129,11 @@ def plotResults(dfResults):
     plt.tight_layout()
     plt.show()
 
-def tuneClassifier(clf, parameters):
+def tuneClassifier(clf, parameters, X_train, X_test, y_train, y_test):
 
   # TODO: Import 'GridSearchCV', 'make_scorer', and any other necessary libraries
   from sklearn.metrics import make_scorer
-  from sklearn.grid_search import GridSearchCV
+  from sklearn.model_selection import GridSearchCV
   from sklearn.ensemble import ExtraTreesClassifier
 
   c, r = y_train.shape
@@ -166,17 +167,24 @@ def scaleModel(clf, scaler, features, labels):
     predictions = clf_Scaled.predict(X_test)
     fb_score =  fbeta_score(y_test, predictions, 2)
 
+    print "Scale results for {} with {}.".format(clf.__class__.__name__, scaler.__class__.__name__)
     print "X.shape {}.".format(X.shape)
     print "X_train.shape {}.".format(X_train.shape)
     print "X_test.shape {}.".format(X_test.shape)
     print "f-score {}.".format(fb_score)
+    print "\n"
     return clf_Scaled, fb_score
+
+
+from sklearn.preprocessing import MaxAbsScaler
+from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import QuantileTransformer
 
 def scaleClassifier(clf, scalers, features, labels):
     scaledClassifier = (clone(clf))
     clf_f_score = 0
     for scaler in scalers:
-        clfScaler, f_score = utils.scaleModel(clf, scaler, features, labels)
+        clfScaler, f_score = scaleModel(clf, scaler, features, labels)
         if(f_score > clf_f_score):
             scaledClassifier = clfScaler
             rf_f_score = f_score
