@@ -16,7 +16,7 @@ def getDataSet(path):
     display(dataset.head(n = 5))
 
     labels = dataset[['RIESGO_VIDA']]
-    features = dataset.drop(['RIESGO_VIDA', 'PQR_ESTADO'], axis = 1)
+    features = dataset.drop(['RIESGO_VIDA'], axis = 1)
     return dataset, features, labels
 
 def train_predict(learner, learner_index, size_index, sample_size, X_train, y_train, X_test, y_test, dfResults):
