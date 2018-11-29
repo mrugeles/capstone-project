@@ -19,7 +19,7 @@ In every link, click the button "Exportar" and then click the button "CSV" to do
 [![N|Solid](https://raw.githubusercontent.com/mrugeles/mrugeles.github.io/master/images/downloaddataset.png)](https://raw.githubusercontent.com/mrugeles/mrugeles.github.io/master/images/downloaddataset.png)
 
 # Python libraries
-Python libraries category_encoders, seaborn and mlxtend
+Python libraries category_encoders, seaborn and mlxtend are required.
 ```sh
 $ pip install category_encoders
 $ pip install seaborn
