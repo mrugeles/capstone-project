@@ -11,8 +11,7 @@ from sklearn.metrics import fbeta_score
 def getDataSet(path):
     pd.set_option('display.max_colwidth', -1)
 
-    dataset = pd.read_csv(path, compression='gzip')
-    dataset = dataset.drop(['Unnamed: 0'], axis = 1)
+    dataset = pd.read_csv(path)
     display(dataset.head(n = 5))
 
     labels = dataset[['RIESGO_VIDA']]
