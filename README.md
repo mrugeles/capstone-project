@@ -4,7 +4,7 @@ For this project is required to download the dataset from www.datos.gov.co and i
 
 # Datasets
 
-It's posible to downloads the datasets directly from:
+The downloaded datasets should be placed in subfolder "datasets/". It's posible to downloads the datasets directly from:
   - https://www.datos.gov.co/api/views/36n3-fsjh/rows.csv?accessType=DOWNLOAD
   - https://www.datos.gov.co/api/views/b3xk-8uh2/rows.csv?accessType=DOWNLOAD
   - https://www.datos.gov.co/api/views/gg2r-kx6x/rows.csv?accessType=DOWNLOAD
