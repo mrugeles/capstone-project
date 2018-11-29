@@ -18,47 +18,28 @@ def getDataSet(path):
     features = dataset.drop(['RIESGO_VIDA'], axis = 1)
     return dataset, features, labels
 
-def train_predict(learner, learner_index, size_index, sample_size, X_train, y_train, X_test, y_test, dfResults):
-    '''
-    inputs:
-       - learner: the learning algorithm to be trained and predicted on
-       - sample_size: the size of samples (number) to be drawn from training set
-       - X_train: features training set
-       - y_train: income training set
-       - X_test: features testing set
-       - y_test: income testing set
-    '''
+def train_predict(learner, X_train, y_train, X_test, y_test, dfResults):
+    start = time()
+    learner = learner.fit(X_train, y_train)
+    end = time()
 
-    # TODO: Fit the learner to the training data using slicing with 'sample_size' using .fit(training_features[:], training_labels[:])
-    start = time() # Get start time
-    learner = learner.fit(X_train[:sample_size], y_train[:sample_size])
-    end = time() # Get end time
-
-    # TODO: Calculate the training time
     train_time = end - start
 
-    # TODO: Get the predictions on the test set(X_test),
-    #       then get predictions on the first 300 training samples(X_train) using .predict()
-    start = time() # Get start time
+    start = time()
     predictions_test = learner.predict(X_test)
-    predictions_train = learner.predict(X_train[:300])
+    predictions_train = learner.predict(X_train)
     end = time() # Get end time
 
-    # TODO: Calculate the total prediction time
     pred_time = end - start
 
-    # TODO: Compute F-score on the the first 300 training samples using fbeta_score()
     b=2
-    f_train = fbeta_score(y_train[:300], predictions_train, b)
+    f_train = fbeta_score(y_train, predictions_train, b)
 
-    # TODO: Compute F-score on the test set which is y_test
     f_test =  fbeta_score(y_test, predictions_test, b)
 
-    # Success
-    print("%s trained on %d samples." % (learner.__class__.__name__, sample_size))
+    print("%s trained." % (learner.__class__.__name__))
 
-    dfResults = dfResults.append({'learner': learner.__class__.__name__, 'learner_index': learner_index, 'size_index': size_index, 'train_time': train_time, 'pred_time': pred_time, 'f_test': f_test, 'f_train':f_train}, ignore_index=True)
-    # Return the results
+    dfResults = dfResults.append({'learner': learner.__class__.__name__, 'train_time': train_time, 'pred_time': pred_time, 'f_test': f_test, 'f_train':f_train}, ignore_index=True)
     return dfResults
 
 def plotTimes(df, ax, time_field):
@@ -138,18 +119,12 @@ def tuneClassifier(clf, parameters, X_train, X_test, y_train, y_test):
   c, r = y_train.shape
   labels = y_train.values.reshape(c,)
 
-  # TODO: Make an fbeta_score scoring object using make_scorer()
   scorer = make_scorer(fbeta_score, beta=2)
-  # TODO: Perform grid search on the classifier using 'scorer' as the scoring method using GridSearchCV()
   grid_obj = GridSearchCV(clf, param_grid=parameters,  scoring=scorer)
-  # TODO: Fit the grid search object to the training data and find the optimal parameters using fit()
   grid_fit = grid_obj.fit(X_train, labels)
-  # Get the estimator
   best_clf = grid_fit.best_estimator_
-  # Make predictions using the unoptimized and model
   predictions = (clf.fit(X_train, labels)).predict(X_test)
   best_predictions = best_clf.predict(X_test)
-  # Report the before-and-afterscores
   print "Unoptimized model\n------"
   print "F-score on testing data: {:.4f}".format(fbeta_score(y_test, predictions, beta = 2))
   print "\nOptimized Model\n------"
