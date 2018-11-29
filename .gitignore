@@ -1,4 +1,5 @@
 .ipynb_checkpoints/*
+datasets/.ipynb_checkpoints/*
 datasets/Base_De_Datos_PQRD_2015.csv
 datasets/Base_De_Datos_PQRD_2016.csv
 datasets/Base_De_Datos_PQRD_2017.csv
