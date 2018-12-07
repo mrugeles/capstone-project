@@ -40,7 +40,7 @@ def train_predict(learner, X_train, y_train, X_test, y_test, dfResults):
     print("%s trained." % (learner.__class__.__name__))
 
     dfResults = dfResults.append({'learner': learner.__class__.__name__, 'train_time': train_time, 'pred_time': pred_time, 'f_test': f_test, 'f_train':f_train}, ignore_index=True)
-    return dfResults
+    return learner, dfResults
 
 def plotTimes(df, ax, time_field):
   for iLearner, row in df.iterrows():
