@@ -38,3 +38,20 @@ def plotFeatures(images, columns):
         average.append(np.average(image))
 
     print("Average gray scale: %f"%(scale_number(np.average(average), 0, 1, 0, 255)))
+
+def count(row, data_columns):
+    total = 0
+    for column_name in data_columns:
+        total += 1 if row[column_name] == '0' else 0
+    return total
+
+def removeRows(dataset):
+    data_columns = dataset.columns.values.tolist()
+    data_columns.remove('RIESGO_VIDA')
+    data_columns.remove('ALTO_COSTO')
+
+
+
+    dfTotal = dataset.apply(lambda row: count(row, data_columns), axis=1)
+    dataset['total'] = dfTotal
+    return dataset.loc[dataset['total'] < 4]
