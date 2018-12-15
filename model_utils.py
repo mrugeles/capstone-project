@@ -10,6 +10,7 @@ from sklearn.metrics import fbeta_score
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix
 from sklearn.externals import joblib
+import shap
 
 import itertools
 
@@ -166,7 +167,5 @@ def modelValidation(modelPath, X_validation, y_validation):
 
 
     cnf_matrix = confusion_matrix(y_validation, y_predictions)
-    tn, fp, fn, tp = confusion_matrix(y_validation, y_predictions).ravel()
-    print("tn: %f, fp: %f, fn:%f, tp: %f"%(tn, fp, fn, tp))
     plot_confusion_matrix(cnf_matrix, classes=['Life not as risk', 'Life at risk'], normalize = True)
     return clf
