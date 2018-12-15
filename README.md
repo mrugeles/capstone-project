@@ -23,7 +23,8 @@ Python libraries category_encoders, seaborn and mlxtend are required.
 ```sh
 $ pip install category_encoders
 $ pip install seaborn
-$ pip install seaborn
+$ pip install mlxtend
+$ pip install shap
 ```
 # Notebooks
 Jupyter notebooks are numbered and shoud be run in that order.
