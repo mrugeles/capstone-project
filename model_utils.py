@@ -7,6 +7,12 @@ from IPython.display import display
 from sklearn.model_selection import train_test_split
 from sklearn.base import clone
 from sklearn.metrics import fbeta_score
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import confusion_matrix
+from sklearn.externals import joblib
+import shap
+
+import itertools
 
 def getDataSet(path):
     pd.set_option('display.max_colwidth', -1)
@@ -18,7 +24,7 @@ def getDataSet(path):
     features = dataset.drop(['RIESGO_VIDA'], axis = 1)
     return dataset, features, labels
 
-def train_predict(learner, X_train, y_train, X_test, y_test, dfResults):
+def train_predict(learner, beta_value, X_train, y_train, X_test, y_test, dfResults):
     start = time()
     learner = learner.fit(X_train, y_train)
     end = time()
@@ -32,15 +38,14 @@ def train_predict(learner, X_train, y_train, X_test, y_test, dfResults):
 
     pred_time = end - start
 
-    b=2
-    f_train = fbeta_score(y_train, predictions_train, b)
+    f_train = fbeta_score(y_train, predictions_train, beta_value)
 
-    f_test =  fbeta_score(y_test, predictions_test, b)
+    f_test =  fbeta_score(y_test, predictions_test, beta_value)
 
     print("%s trained." % (learner.__class__.__name__))
 
     dfResults = dfResults.append({'learner': learner.__class__.__name__, 'train_time': train_time, 'pred_time': pred_time, 'f_test': f_test, 'f_train':f_train}, ignore_index=True)
-    return dfResults
+    return learner, dfResults
 
 def plotTimes(df, ax, time_field):
   for iLearner, row in df.iterrows():
@@ -62,55 +67,7 @@ def plotEval(df, ax, eval_field):
     ax.set_xticklabels(["1%", "10%", "100%"])
     ax.set_xlabel("Training Set Size")
 
-def plotResults(dfResults):
-    plt.figure(figsize = (15,10))
-
-    axTraining = plt.subplot2grid((2, 3), (0, 0), colspan=1)
-    axFscoreTraining = plt.subplot2grid((2, 3), (0, 1), colspan=2)
-    axPrediction = plt.subplot2grid((2, 3), (1, 0), colspan=1)
-    axFscoreTest = plt.subplot2grid((2, 3), (1, 1), colspan=2)
-
-    bar_width = 0.3
-    colors = {
-          'SGDClassifier': '#A00000',
-          'AdaBoostClassifier': '#00A0A0',
-          'RandomForestClassifier': '#00A000'
-    }
-
-    plotTimes(dfResults, axTraining, 'train_time')
-    plotTimes(dfResults, axPrediction, 'pred_time')
-
-    plotEval(dfResults, axFscoreTraining, 'f_train')
-    plotEval(dfResults, axFscoreTest, 'f_test')
-
-    # Add unique y-labels
-    axTraining.set_ylabel("Time (in seconds)")
-    axFscoreTraining.set_ylabel("F-score")
-    axPrediction.set_ylabel("Time (in seconds)")
-    axFscoreTest.set_ylabel("F-score")
-
-    axTraining.set_title("Model Training")
-    axFscoreTraining.set_title("F-score on Training Subset")
-    axPrediction.set_title("Model Predicting")
-    axFscoreTest.set_title("F-score on Testing Set")
-
-    axFscoreTraining.set_ylim((0, 1))
-    axFscoreTest.set_ylim((0, 1))
-
-    # Create patches for the legend
-    learners = dfResults['learner'].drop_duplicates().values.tolist()
-    patches = []
-    for i, learner in enumerate(learners):
-        patches.append(mpatches.Patch(color = colors[learner], label = learner))
-    plt.legend(handles = patches, bbox_to_anchor = (0.5, 2.43), loc = 'upper center', borderaxespad = 0., ncol = 3, fontsize = 'x-large')
-
-    # Aesthetics
-    plt.suptitle("Performance Metrics for Three Supervised Learning Models", fontsize = 16, y = 1.10)
-    plt.tight_layout()
-    plt.show()
-
 def tuneClassifier(clf, parameters, X_train, X_test, y_train, y_test):
-
   # TODO: Import 'GridSearchCV', 'make_scorer', and any other necessary libraries
   from sklearn.metrics import make_scorer
   from sklearn.model_selection import GridSearchCV
@@ -125,11 +82,17 @@ def tuneClassifier(clf, parameters, X_train, X_test, y_train, y_test):
   best_clf = grid_fit.best_estimator_
   predictions = (clf.fit(X_train, labels)).predict(X_test)
   best_predictions = best_clf.predict(X_test)
+
+  cnf_matrix = confusion_matrix(y_test, best_predictions)
+  plot_confusion_matrix(cnf_matrix, classes=['Life not as risk', 'Life at risk'], normalize = True)
   print "Unoptimized model\n------"
   print "F-score on testing data: {:.4f}".format(fbeta_score(y_test, predictions, beta = 2))
   print "\nOptimized Model\n------"
   print "Final F-score on the testing data: {:.4f}".format(fbeta_score(y_test, best_predictions, beta = 2))
   return best_clf
+
+
+
 
 def scaleModel(clf, scaler, features, labels):
     transformer = MaxAbsScaler().fit(features)
@@ -139,7 +102,7 @@ def scaleModel(clf, scaler, features, labels):
 
     clf_Scaled = (clone(clf)).fit(X_train, y_train)
     predictions = clf_Scaled.predict(X_test)
-    fb_score =  fbeta_score(y_test, predictions, 2)
+    fb_score =  fbeta_score(y_test, predictions, beta_value)
 
     print "Scale results for {} with {}.".format(clf.__class__.__name__, scaler.__class__.__name__)
     print "X.shape {}.".format(X.shape)
@@ -163,3 +126,46 @@ def scaleClassifier(clf, scalers, features, labels):
             scaledClassifier = clfScaler
             rf_f_score = f_score
     return scaledClassifier
+
+def plot_confusion_matrix(cm, classes,
+                          normalize=False,
+                          cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        title = "Normalized confusion matrix"
+    else:
+        title = 'Confusion matrix, without normalization'
+
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, format(cm[i, j], fmt),
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.tight_layout()
+
+def modelValidation(modelPath, X_validation, y_validation):
+    clf = joblib.load(modelPath)
+
+    y_predictions = clf.predict(X_validation)
+
+    print "F-score on validation data: {:.4f}".format(fbeta_score(y_validation, y_predictions, beta = 2))
+
+
+    cnf_matrix = confusion_matrix(y_validation, y_predictions)
+    plot_confusion_matrix(cnf_matrix, classes=['Life not as risk', 'Life at risk'], normalize = True)
+    return clf
